@@ -1,0 +1,111 @@
+# ---------------------------------------------------------------------------
+# The dependencies the POPS demo actually imports.
+#
+# Every package below is imported by name somewhere in engine/, app_poc_v2.py
+# or tests/, and is pinned to the version the suite was last run green against
+# (all 30 test files, ultralytics 8.4.40). Transitive dependencies are
+# deliberately absent — pip resolves those. Pinning them here would make this a
+# lockfile, and a lockfile that nothing regenerates goes stale silently.
+#
+#     pip install -r requirements.txt
+#
+# WHAT THIS FILE USED TO BE: a 361-line `pip freeze` of a whole shared
+# environment, most of it belonging to other projects. It could not be
+# installed as it stood (`torch_tpu==0.0.0`, a `+cu124` torchaudio pin that
+# plain PyPI cannot resolve), and it was not even a superset of what the demo
+# needs — it listed no gradio, no transformers, no pillow, no scipy. Only three
+# pins in it were deliberate. The list was rebuilt from the imports: every .py
+# in engine/, api/, tests/ and the repo root was parsed, each imported module
+# mapped to the distribution that provides it, and each distribution pinned to
+# what storesafe_env runs.
+#
+# READ THE TORCH SECTION BELOW if you want GPU. Plain PyPI gives you the
+# CPU-only wheel on Windows, and the demo will run, slowly, without telling you.
+# ---------------------------------------------------------------------------
+
+# --- Detection and tracking ------------------------------------------------
+#
+# ultralytics, numpy and opencv-python are pinned harder than the rest, and
+# tests/test_dependency_pins.py fails if any of the three loses its pin. These
+# three decide what the tracker outputs: 8.4.19 and 8.4.40 disagree about
+# ByteTrack's low-confidence second association, which is a real difference in
+# POPS score from the same video. engine/ultralytics_compat.py makes the two
+# agree; the pin is what stops a third version arriving unnoticed.
+ultralytics==8.4.19
+numpy==1.26.4
+opencv-python==4.11.0.86
+
+# --- UI --------------------------------------------------------------------
+gradio==6.12.0
+
+# --- Video I/O -------------------------------------------------------------
+#
+# Ships the ffmpeg binary that engine/video_io.py re-encodes with
+# (video_io.py:15). Nothing here assumes a system ffmpeg on PATH.
+imageio-ffmpeg==0.6.0
+
+# --- Local VLM (the default case-report backend) ---------------------------
+#
+# Qwen3-VL-2B needs transformers >= 4.57.0; engine/vlm_analyzer.py:794 raises
+# with that message if it is older. accelerate is not imported by name but is
+# required all the same — every local model is loaded with device_map="auto"
+# (vlm_analyzer.py:802), which transformers implements through accelerate.
+transformers==4.57.6
+accelerate==1.13.0
+pillow==10.4.0
+
+# --- Optional -------------------------------------------------------------
+#
+# engine/floor_bev2d_builder.py:23 imports scipy inside a try/except and falls
+# back to its own smoothing when the import fails. Install it for the better
+# BEV heatmap; skip it and the demo still runs.
+scipy==1.17.1
+
+# ---------------------------------------------------------------------------
+# torch / torchvision — NOT PINNED HERE, ON PURPOSE
+#
+# ultralytics pulls torch in transitively, and on Windows plain PyPI resolves
+# the CPU-only wheel. The CUDA build lives on a different index and needs an
+# --index-url that `pip install -r` does not pass:
+#
+#     pip install torch==2.11.0+cu128 torchvision==0.26.0+cu128 \
+#         --index-url https://download.pytorch.org/whl/cu128
+#
+# Run that BEFORE this file, so the later install just satisfies an
+# already-satisfied requirement. create_virtual_env.py:193 does exactly this
+# and is the supported setup path. An --extra-index-url line in here would
+# reintroduce the CPU-wheel resolution for anyone running pip directly, which
+# is the failure this ordering exists to avoid.
+#
+# Versions this repo was tested on: torch 2.11.0+cu128, torchvision 0.26.0+cu128.
+# For reference, a bare `pip install -r requirements.txt` on an empty
+# environment resolves torch 2.13.0 / torchvision 0.28.0 (CPU) transitively
+# through ultralytics — newer than what was tested, and without CUDA.
+# ---------------------------------------------------------------------------
+
+# ---------------------------------------------------------------------------
+# Remote VLM backends — optional, uncomment the one you use
+#
+# Both are imported inside the functions that need them
+# (vlm_analyzer.py:672 and :701), so the demo starts without either. Neither is
+# installed in storesafe_env, so neither carries a tested pin.
+#
+# anthropic              # API-key backend
+# claude-agent-sdk       # CLAUDE_CODE_OAUTH_TOKEN backend
+# ---------------------------------------------------------------------------
+
+# ---------------------------------------------------------------------------
+# Deliberately absent
+#
+# fastapi, uvicorn, python-multipart, pydantic
+#     Only api/ imports these, and api/requirements.txt already lists them.
+#     Install that file too if you are running the REST service. (pydantic is
+#     imported directly by api/models.py:5 but reaches that file only as a
+#     fastapi dependency.)
+#
+# onnxruntime-gpu
+#     create_virtual_env.py:210 installs it, but nothing in engine/, api/,
+#     tests/ or app_poc_v2.py imports it and no code path exports an ONNX
+#     model. Left out here; remove it from create_virtual_env.py separately if
+#     you agree it is dead.
+# ---------------------------------------------------------------------------

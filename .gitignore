@@ -1,0 +1,134 @@
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+*.egg-info/
+
+# Virtual environments
+venv/
+.venv/
+*_env/
+env/
+
+# Node
+node_modules/
+web/node_modules/
+web/dist/
+
+# Editor / IDE / Claude
+.vscode/
+.idea/
+.claude/worktrees/
+.claude/settings.local.json
+
+# Build / archive artifacts
+*.zip
+engine.zip
+
+# Temp / scratch
+temp/
+tmp/
+
+# Saved zone sets. engine/config.py:710 points the Zone Editor's Save button
+# here, so this folder is app output, not source: one JSON per set, named after
+# the clip it was drawn on. The app recreates it on demand, and the filenames
+# carry store-recording names, so nothing in it belongs in the repo.
+zone_presets/
+
+# ---------------------------------------------------------------------------
+# Video. No clip belongs in this repo, at any path.
+#
+# Every video here is either a store recording (identifiable people, so it is
+# not ours to publish) or a render the demo produced and can produce again.
+# The pattern is deliberately unanchored: the previous /1763*.mp4 only caught
+# one timestamp prefix at the repo root, and the next batch of exports will not
+# share it.
+# ---------------------------------------------------------------------------
+*.mp4
+*.avi
+*.mov
+*.mkv
+*.webm
+
+# ...except the five demo clips in sample_videos/, which are tracked via LFS
+# (see .gitattributes) so a clone can run the demo without a separate handoff.
+# The blanket rules above still cover every other path, including the clips at
+# the repo root and tests/fixtures/golden/.
+!sample_videos/*.mp4
+
+# The golden-regression clip. tests/test_golden_clip.py LOOKS for a clip here,
+# so without this line the next person to put one where the test tells them to
+# would commit real store CCTV with identifiable people in it. Only the
+# baseline JSON (frame counts, no imagery) belongs in git. Redundant with the
+# blanket video rules above, kept because this directory is the one place a
+# clip is actively invited.
+tests/fixtures/golden/*.mp4
+tests/fixtures/golden/*.avi
+tests/fixtures/golden/*.mov
+
+# ---------------------------------------------------------------------------
+# Run output. tracker.py writes "<input video basename>_tracking.json" next to
+# the working directory (engine/tracker.py:2158), so the name changes with
+# every clip and cannot be listed. These are regenerable, several MB each, and
+# carry the per-frame contents of a real store recording.
+# ---------------------------------------------------------------------------
+*_tracking.json
+outputs/
+runs/
+*.log
+
+# Loose HTML/JS/CSS scratch files at repo root (web/ is the real frontend)
+/*.html
+/*.js
+/*.css
+
+# Other root-level scratch assets
+/9C1-Zone.png
+/all_convo.txt
+
+# Docs and design handoff
+/docs/
+/design_handoff_storesafe/
+/diagrams/
+
+# Demo / test scripts and root-level model weights (kept locally, not pushed).
+#
+# run_demo.py is NOT in this list any more. It is the launcher run_demo.bat
+# hands over to, so a clone without it gets a batch file that fails on its
+# first real instruction -- which is precisely the person least able to
+# diagnose it.
+/test_cli.py
+/test_cli_img.py
+/mobile_sam.pt
+/yolov8n-pose.pt
+
+# ---------------------------------------------------------------------------
+# Model weights.
+#
+# The four weights the demo actually loads STAY IN GIT (via LFS, see
+# .gitattributes) -- a clone that cannot load them cannot run:
+#   weights/detection/weights/best.pt          engine/config.py:14
+#   weights/pose_estimation/yolo26l-pose.pt    engine/config.py:135
+#   weights/cart_quality/weights/best.pt       engine/config.py:485
+#   weights/fill_and_bag_classifier/.../best.pt engine/config.py:486
+#
+# The two below are referenced by nothing in engine/, tests/, api/ or web/ --
+# an older 3-class detector and the nano pose model we did not end up using.
+# 48 MB of LFS bandwidth on every clone for weights no code path opens.
+# ---------------------------------------------------------------------------
+weights/detection_3_class_dillion/
+weights/pose_estimation/yolo26n-pose.pt
+
+# Superseded pip manifest. requirements.txt is the real one; nothing reads this.
+/requirements2.txt
+
+# Offline copy of the case-report model: 4 GB of weights that Hugging Face
+# already hosts. models/README.txt explains when to put them there and stays
+# in git so the instructions survive a clone.
+/models/*
+!/models/README.txt
+
+# OS
+.DS_Store
+Thumbs.db
